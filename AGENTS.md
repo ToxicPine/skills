@@ -1,0 +1,1 @@
+Install skills through `programs.skills.users.<user>.skills` in your NixOS configuration rather than other installation methods, importing [agents.nix](https://github.com/Human-Exploration-Company/agents.nix) from a copy of its repository in `/etc/nixos` or a GitHub flake input.
