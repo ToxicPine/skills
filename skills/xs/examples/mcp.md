@@ -1,11 +1,11 @@
 # Example: an MCP server connected to the stream
 
-This example sends JSON-RPC requests to a process through a duplex service.
-The service records responses as frames. An actor reacts to response text.
+This example sends JSON-RPC requests to a process through a duplex service. The
+service records responses as frames. An actor reacts to response text.
 
-The example assumes a running store and xs.nu loaded with `XS_ADDR` set.
-The xs server's environment must provide `npx` and access to the example package.
-The package version is fixed for this example's `echo` and `add` tools.
+The example assumes a running store and xs.nu loaded with `XS_ADDR` set. The xs
+server's environment must provide `npx` and access to the example package. The
+package version is fixed for this example's `echo` and `add` tools.
 
 ## 1. Observe the stream
 
@@ -33,10 +33,10 @@ r#'{
 }'# | .append xs.service.mcp.create
 ```
 
-Wait for `xs.service.mcp.active` before sending requests.
-`lines` separates stdout into response frames on `mcp.recv`. The CAS target stores
-each response as text. Content on `mcp.send` goes to the process's stdin.
-Each JSON-RPC request needs a terminating newline.
+Wait for `xs.service.mcp.active` before sending requests. `lines` separates
+stdout into response frames on `mcp.recv`. The CAS target stores each response
+as text. Content on `mcp.send` goes to the process's stdin. Each JSON-RPC
+request needs a terminating newline.
 
 ## 3. List tools and call echo
 
@@ -45,8 +45,8 @@ Each JSON-RPC request needs a terminating newline.
 | to json -r | $in + "\n" | .append mcp.send
 ```
 
-Wait for a `mcp.recv` response with JSON-RPC ID `1`.
-The response contains the tool names and their input schemas.
+Wait for a `mcp.recv` response with JSON-RPC ID `1`. The response contains the
+tool names and their input schemas.
 
 ```nushell
 {jsonrpc: "2.0", id: 2, method: "tools/call", params: {
@@ -61,8 +61,8 @@ After the echo response arrives, inspect its content:
 .last mcp.recv | .cas $in.hash | from json
 ```
 
-The response ID associates the JSON-RPC result with its request.
-The frame ID identifies the stored event.
+The response ID associates the JSON-RPC result with its request. The frame ID
+identifies the stored event.
 
 ## 4. React to a response
 
@@ -106,5 +106,5 @@ containing `42`.
 ```
 
 The runtime acknowledges termination with each processor's `fin.term` event.
-Separate service names provide separate `.send` and `.recv` channels for multiple
-MCP servers. Further actors can process responses or call actions.
+Separate service names provide separate `.send` and `.recv` channels for
+multiple MCP servers. Further actors can process responses or call actions.

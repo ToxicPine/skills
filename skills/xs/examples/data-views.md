@@ -1,7 +1,7 @@
 # Examples: relationships and derived views
 
-These examples use xs.nu with a running store selected through `XS_ADDR`.
-The examples are independent.
+These examples use xs.nu with a running store selected through `XS_ADDR`. The
+examples are independent.
 
 ## Threaded conversations
 
@@ -42,8 +42,8 @@ let branch = ("What about Germany?" | .append chat.turn --meta {
 thread $branch | each {|frame| .cas $frame.hash }
 ```
 
-This branch contains the first two messages and the question about Germany.
-The landmark discussion remains available through `$fourth`.
+This branch contains the first two messages and the question about Germany. The
+landmark discussion remains available through `$fourth`.
 
 ## Task state from events
 
