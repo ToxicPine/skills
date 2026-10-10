@@ -10,15 +10,16 @@ store's vocabulary and workflows before other work.
 3. Exclude names whose selected frame has `meta.disabled: true`.
 4. Read the remaining names and descriptions into context.
 5. Select the skills that apply to the task.
-6. Verify that each selected frame's `hash` matches its `meta.files."SKILL.md"` entry.
+6. Verify that each selected frame's `hash` matches its `meta.files."SKILL.md"`
+   entry.
 7. Fetch each selected `SKILL.md` with `xs cas ADDRESS HASH`.
 8. Read those entry points before the applicable work.
 9. Resolve supporting files through the selected frame's manifest.
 
-Retain each selected frame and its manifest for the duration of that skill's use.
-Repeat discovery for each store involved. Refresh the catalog when you revisit
-a store for a later task. If the catalog read fails, resolve the failure before
-using store-specific instructions.
+Retain each selected frame and its manifest for the duration of that skill's
+use. Repeat discovery for each store involved. Refresh the catalog when you
+revisit a store for a later task. If the catalog read fails, resolve the failure
+before using store-specific instructions.
 
 An empty result means the store has no published skills. Discovery retrieves
 metadata first and content afterward. This sequence provides the initial store
@@ -29,35 +30,37 @@ subject to the agent's existing instruction hierarchy.
 
 ### Format
 
-By convention, each frame declares one complete version of one skill.
-The topic is `skills` and the retention policy is `forever`.
+By convention, each frame declares one complete version of one skill. The topic
+is `skills` and the retention policy is `forever`.
 
-| Metadata field | Meaning |
-| --- | --- |
-| `name` | Stable skill name |
-| `description` | What the skill does and when to read it |
-| `files` | Manifest mapping relative file paths to CAS hashes; required for active skills |
-| `disabled` | Optional; true withdraws that named skill |
+| Metadata field | Meaning                                                                        |
+| -------------- | ------------------------------------------------------------------------------ |
+| `name`         | Stable skill name                                                              |
+| `description`  | What the skill does and when to read it                                        |
+| `files`        | Manifest mapping relative file paths to CAS hashes; required for active skills |
+| `disabled`     | Optional; true withdraws that named skill                                      |
 
 Each file's bytes live in CAS. The manifest includes `SKILL.md`, and the frame's
-own `hash` equals that entry's hash. The Markdown frontmatter contains `name` and
-`description`, matching the frame metadata. Catalog discovery can read these
+own `hash` equals that entry's hash. The Markdown frontmatter contains `name`
+and `description`, matching the frame metadata. Catalog discovery can read these
 fields without fetching the files.
 
-Manifest paths use `/` separators and are relative to the skill folder.
-Keys contain no absolute paths, empty components, `.` components, or `..`
-components. Paths preserve the folder structure; empty directories have no entry.
+Manifest paths use `/` separators and are relative to the skill folder. Keys
+contain no absolute paths, empty components, `.` components, or `..` components.
+Paths preserve the folder structure; empty directories have no entry.
 
 ### Procedure: publish a skill folder
 
-1. Collect `SKILL.md` and its supporting files, including references, scripts, and assets.
+1. Collect `SKILL.md` and its supporting files, including references, scripts,
+   and assets.
 2. Store each file's exact bytes with `xs cas-post ADDRESS` or `.cas-post`.
 3. Map each relative path to its returned hash in `files`.
-4. Append the exact `SKILL.md` bytes to `skills`, with `name`, `description`, and `files` metadata.
+4. Append the exact `SKILL.md` bytes to `skills`, with `name`, `description`,
+   and `files` metadata.
 5. Verify that the returned frame's hash matches `files."SKILL.md"`.
 
-All referenced content is stored before the declaring frame becomes visible.
-CAS reuses unchanged file content across versions.
+All referenced content is stored before the declaring frame becomes visible. CAS
+reuses unchanged file content across versions.
 
 ### Example: publish meeting guidance with a reference
 
@@ -104,24 +107,24 @@ To withdraw a skill, append a metadata-only frame with its name and
 `disabled: true`. A withdrawal frame requires no manifest or content.
 
 Catalog discovery reads all versions and selects the latest version for each
-name. `.last skills` returns only the final frame on the shared topic.
-`last:1` retention removes older frames across all skill names on that topic.
+name. `.last skills` returns only the final frame on the shared topic. `last:1`
+retention removes older frames across all skill names on that topic.
 
 ## Supporting files
 
 A relative Markdown link resolves from the directory of the file containing it.
-Resolve and normalize the path within the skill folder.
-Look up that path's hash in the selected frame's manifest. A fragment such as `#format` identifies a
+Resolve and normalize the path within the skill folder. Look up that path's hash
+in the selected frame's manifest. A fragment such as `#format` identifies a
 section within the fetched file. Use that same manifest throughout the skill's
 execution to keep its files on one version.
 
 **Example:** In `references/workflow.md`, `../scripts/run.nu` resolves to
 `scripts/run.nu` in the manifest.
 
-To reconstruct the folder, fetch each file by its manifest hash.
-Write the bytes at the file's relative path. Keep every resolved path within the destination skill folder.
-Cross-store publication also requires transferring every manifest file to the
-destination CAS before publishing the declaring frame.
+To reconstruct the folder, fetch each file by its manifest hash. Write the bytes
+at the file's relative path. Keep every resolved path within the destination
+skill folder. Cross-store publication also requires transferring every manifest
+file to the destination CAS before publishing the declaring frame.
 
-If a referenced path or CAS object is missing, resolve the publication error.
-If metadata and frontmatter disagree, correct the publication before using it.
+If a referenced path or CAS object is missing, resolve the publication error. If
+metadata and frontmatter disagree, correct the publication before using it.
