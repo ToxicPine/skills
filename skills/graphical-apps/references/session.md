@@ -83,11 +83,43 @@ Give the user this URL with the actual host and port:
 http://HOST:PORT/?floating_menu=false&reconnect=false&sound=false
 ```
 
-Some browser decoding features require a secure context. If necessary, configure
-Xpra to serve TLS directly with a suitable certificate. Alternatively,
-[Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve) can
-provide an HTTPS URL for Xpra's local HTTP port. Direct port exposure is
-sufficient when HTTPS is not needed.
+Some decoding features in the user's browser require a secure context. If the
+user needs HTTPS, recommend direct Xpra TLS with a suitable certificate or
+[Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve). Direct
+port exposure is sufficient when HTTPS is not needed. Operate the application
+through local X tools.
+
+For HTTPS access through Serve, recommend a companion systemd service. Start it
+after the application service and its lease timer are active. Choose an unused
+HTTPS port before you start it. This example exposes local port 18080 on HTTPS
+port 18443:
+
+```bash
+serve_unit="${session_unit%.service}-https.service"
+tailscale_path=$(command -v tailscale)
+systemd-run --user --unit="$serve_unit" --collect \
+  --service-type=exec \
+  -p "BindsTo=$session_unit" -p "After=$session_unit" \
+  -- "$tailscale_path" serve --https=18443 http://127.0.0.1:18080
+```
+
+The service runs Serve in the foreground. Omit `--bg`. `BindsTo` and `After`
+stop the companion service when the application stops. This includes lease
+expiry, manual shutdown, and application failure. When the Serve process ends,
+Tailscale removes its mapping automatically. Lease renewal keeps both services
+running.
+
+The service user needs permission to manage Serve. If privilege is required,
+invoke `sudo -n "$tailscale_path"` in the service command. Do not depend on an
+interactive password prompt.
+
+Verify that the companion service is active and HTTPS works. Read its URL with
+`tailscale serve status` or from the service journal. Tell the user to open that
+URL in their browser. `--https` permits multiple sessions without using
+port 443.
+
+This pattern was verified on the host. Lease expiry stopped the companion
+service and removed its mapping without an explicit `off` command.
 
 ## Renew the lease
 
