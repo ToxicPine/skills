@@ -123,16 +123,26 @@ Procedure to read a thread:
 3. Reverse the collected frames into conversation order.
 4. Fetch each turn's content with `.cas`.
 
-**Recommended pattern: interactive views.** Reduce events into current state.
-Follow new frames to update that state. A processor can publish the state, or
-a client can derive it during reads.
+**Example: a dependency view calculated on request.** A release depends on
+packaging, which depends on approval. Task events record these dependencies
+with task IDs. On request, a client follows the references and checks completion
+events. It shows what still blocks the release and which tasks the approval
+holds up. The client displays the view without storing it.
 
-**Example: task-list interface.** A server renders the current task state as
-HTML and streams updates to clients over SSE. New task events update the
-projection and the displayed list.
+**Example: a maintained dependency view.** An actor replays retained task events
+and follows new events to update the dependency view. It publishes each complete
+snapshot to a dedicated topic with `ttl: "last:1"`. Clients read the latest
+snapshot with `.last`. The source events remain on separate topics.
+This example uses `last:1` to retain the latest view. Without this retention
+limit, obsolete snapshots would accumulate as unnecessary event history.
+
+The actor maintains the view; the [retention policy](#retention) removes older
+snapshots. The latest snapshot can be stale if the actor stops or falls behind.
+The [running-total example](processors.md#actors-react-and-carry-state) shows
+the actor configuration for this pattern.
 
 [Worked examples](../examples/data-views.md) show thread reconstruction, branching,
-and a task-state projection.
+and a task-state projection with live interface updates.
 
 ## Retention
 

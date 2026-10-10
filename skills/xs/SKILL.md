@@ -7,8 +7,8 @@ description: "Work with cross.stream (xs), an event store for capturing informat
 
 cross.stream is a local-first event store for reactive workflows and automation.
 It records frames in an ordered stream. Clients can read history and subscribe
-to new arrivals. Queries and processors derive views and further events from
-stored information.
+to new arrivals. Processors can transform recorded information and append results
+as new events. Queries and processors can also derive views from recorded events.
 
 A network can expose multiple stores belonging to different people and organizations.
 The examples often pair a personal store with an organization-wide store to
@@ -51,13 +51,17 @@ operation under this skill's recommended convention.
 | Action | Stateless operation invoked by a call frame | Fetch a document, summarize supplied text, or run a tool when called |
 
 A service can feed an actor. The actor can call an action and process its result.
-Processor scripts define these connections. An external model can interpret
-free-form information for a workflow.
+Processor scripts define these connections.
 
-**Example: capture first, organize later.** An organization-wide store receives
-incomplete notes and meeting information. A personal store receives selected frames.
-Local processors derive personal views and trigger tools on that person's device.
-Each interface can present a different view of the shared information.
+**Examples: capture first, organize later.** These independent examples describe
+two uses of recorded information:
+
+- [Processing and enrichment](references/processors.md#example-processing-and-enrichment):
+  an external language model classifies notes and extracts stated project names.
+  A processor appends new frames with category and project fields in their metadata.
+  Queries can then filter or group those frames by category or project.
+- [Derived views](references/store.md#relationships-and-views):
+  trace task dependencies to show blockers and affected tasks.
 
 **Example: external integration.** A service can connect a task runner or a
 Slack/WhatsApp connector to the stream. The integration supplies the external

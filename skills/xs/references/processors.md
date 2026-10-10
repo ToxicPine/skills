@@ -153,6 +153,26 @@ It emits a call when that task meets its execution rules. An action or connected
 agent runner and record the result. The runner, credentials, and rule for when
 to execute must be supplied by the integration.
 
+### Example: processing and enrichment
+
+An actor calls an action that uses an external language model to classify
+meeting notes into predefined categories. The action extracts stated project
+names and dates into defined fields. Missing or ambiguous values remain unknown.
+
+The actor appends each result with the source note's frame ID and supporting
+text. The original notes remain unchanged. Another actor groups the results
+by project and category.
+
+### Example: schema migration by replay
+
+This example uses topic names to distinguish schemas: `notes.v1` and `notes.v2`.
+These names are application conventions. A processor replays retained `notes.v1`
+frames, converts their metadata to the new schema, and appends the results to
+`notes.v2`. Each result includes its source frame ID. The processor uses that
+reference to skip records already converted. The original frames remain unchanged.
+After replay, consumers read `notes.v2`, and producers write new records in that
+schema.
+
 ## Lifecycle and shared configuration
 
 Append `xs.<kind>.<name>.create` to define or start a processor.
