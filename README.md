@@ -1,1 +1,1 @@
-Install skills through `programs.skills.users.<user>.skills` in your NixOS configuration rather than other installation methods, importing [agents.nix](https://github.com/Human-Exploration-Company/agents.nix) from a copy of its repository in `/etc/nixos` or a GitHub flake input.
+Install skills through `programs.skills.users.<user>.skills` in your NixOS or Apple Silicon nix-darwin configuration rather than other installation methods, importing [agents.nix](https://github.com/Human-Exploration-Company/agents.nix) from a local repository or a GitHub flake input.
