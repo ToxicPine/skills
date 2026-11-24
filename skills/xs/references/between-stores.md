@@ -54,6 +54,9 @@ in their respective streams.
 
 A frame's hash identifies content in CAS. The destination needs those bytes to
 resolve the hash. Metadata-only frames require only the frame transfer.
+A hash inside metadata is not a CAS retention reference. Transfer and retain
+supporting files separately when copying a manifest, as described in
+[store skills](store-skills.md#publication).
 
 For each selected frame:
 
@@ -77,6 +80,10 @@ For a metadata-only frame, omit the content input in step 4. Append stores any
 content in the destination CAS and creates its reference. Text conversions can
 change raw bytes and their hashes.
 
+Finish each content transfer with its frame write before the one-hour CAS grace
+period ends. A retained destination frame keeps its directly referenced content;
+ephemeral frames do not. See [CAS cleanup](store.md#frames-and-content).
+
 ## Whole-store transfer
 
 External xs.nu `.export <directory>` writes `frames.jsonl` and `cas/`.
@@ -99,8 +106,8 @@ their original values, so time-based expiry remains relative to source creation.
 ### Recommended recovery procedure
 
 1. Keep a durable cursor for each source and selection.
-2. Exclude synthetic `xs.threshold` and `xs.pulse` frames from copying and
-   cursor updates.
+2. Exclude synthetic `xs.threshold`, `xs.pulse`, and `xs.lagged` frames from
+   copying and cursor updates. Treat `xs.lagged` as a failed read.
 3. Store each selected frame's content, then write its destination frame.
 4. After the write succeeds, save the source frame ID as the cursor.
 5. On reconnection, read with `--after SOURCE_ID --follow`.

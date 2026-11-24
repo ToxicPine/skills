@@ -78,4 +78,7 @@ two uses of recorded information:
 Slack/WhatsApp connector to the stream. The integration supplies the external
 program and its access credentials.
 
-If deployed behavior differs, check `xs --version` and `xs version <addr>`.
+These references describe xs 0.16.0, with Nushell 0.117.0 for eval and
+processors. Check `xs --version` and `xs version <addr>` before using features
+on an older deployment. Do not reopen a store with xs 0.15 after xs 0.16 has
+used it; older writes can invalidate its retention counts.

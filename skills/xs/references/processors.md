@@ -51,7 +51,9 @@ shows the full request, response, and actor sequence.
 
 The default `restart: "on-success"` restarts a cleanly completed pipeline after
 one second. `restart: "never"` makes clean completion terminal. A pipeline error
-emits `fin.error` and stays down under either policy.
+emits `fin.error` and stays down under either policy. Since xs 0.14.2, this
+includes an external command that exits with a nonzero status, even within a
+pipeline. SIGPIPE is not treated as a failure.
 
 ## Actors: react and carry state
 
@@ -116,9 +118,16 @@ heartbeats in milliseconds.
 persisted state after a restart. Deduplicate external work when replaying
 history.
 
-Actors can also `.append` explicit events. Output frames carry `actor_id` and
-`frame_id` provenance. An actor ignores frames marked with its own actor ID;
-loops involving multiple processors remain possible.
+Actors can also `.append` explicit events. Each invocation buffers its appends
+until the closure returns. Since xs 0.15, those appends and its output frame
+commit as one batch, with no other writer's frames between them. If the closure
+errors, none of those frames are written. Ephemeral appends are also held until
+the closure returns, so they cannot report progress during an invocation. Use a
+service for long work that must append progress as it runs.
+
+Output frames carry `actor_id` and `frame_id` provenance. An actor ignores
+frames marked with its own actor ID; loops involving multiple processors remain
+possible.
 
 ## Actions: call an operation
 
@@ -198,6 +207,12 @@ Append `xs.<kind>.<name>.create` to define or start a processor. Append
 An actor completes when its closure omits `next`. Service completion follows the
 `restart` setting described above.
 
+An actor that falls behind live frames stops with `fin.error`. A lag in a
+service's control read or duplex input also stops that service with `fin.error`.
+The actor, service, and action supervisors recover their own lag by reading
+retained frames after their last handled frame, then resuming live delivery.
+This recovery does not restart an actor or service that has already failed.
+
 The `active` acknowledgment identifies its originating create frame through
 `meta.actor_id`, `meta.source_id` for a service, or `meta.action_id`. Actor
 `active` metadata also records the start position. Service `replaced` metadata
@@ -254,6 +269,16 @@ described in the actor section.
 are `.recv` for services, `.out` for actors, and `.response` for actions.
 Include the leading dot in a custom suffix. Output TTL defaults to `forever`.
 Default outputs are records in metadata; choose `target: "cas"` for other types.
+
+## Nushell compatibility
+
+xs 0.16 embeds Nushell 0.117.0. Eval and processor scripts use that version.
+Replace removed `filter` calls with `where`, replace `-i` on `get`, `select`,
+and `reject` with `-o`, and replace `let-env` with `$env.NAME = value`.
+
+Load optional plugin commands with `xs serve --plugin PATH`. See
+[server options](commands.md#server-and-module-options) for compatibility and
+startup behavior.
 
 ## Modules
 

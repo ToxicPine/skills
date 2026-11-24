@@ -99,6 +99,8 @@ The HTTP API exposes store operations to clients:
 | `GET /{id}` / `DELETE /{id}`    | Retrieve/remove a frame                                                                                     |
 | `GET /last[/{topic}]`           | Latest frame, or latest N using `last=N`                                                                    |
 | `POST /cas` / `GET /cas/{hash}` | Store/retrieve raw content                                                                                  |
+| `POST /append-batch`            | Append up to 1024 NDJSON frames in one commit                                                               |
+| `POST /gc`                      | Delete unreferenced CAS content older than one hour                                                        |
 | `POST /import`                  | Import one JSON frame verbatim                                                                              |
 | `POST /eval`                    | Evaluate the UTF-8 Nushell script in the request body                                                       |
 | `GET /version`                  | Server version                                                                                              |
@@ -109,8 +111,38 @@ interval in milliseconds. `GET /last` returns one JSON frame by default and
 NDJSON for `last` greater than 1. It also accepts `follow` and `with-timestamp`.
 `GET /{id}` and append responses accept `with-timestamp`.
 
+A following HTTP read that falls behind sends `xs.lagged` with `meta.skipped`
+as its last frame, then closes. A request with `TE: trailers` also receives an
+`xs-lagged: N` trailer. Resume from the last handled source frame, as described
+in [read recovery](store.md#read-history-then-follow).
+
+`POST /append-batch` takes one JSON object per line. Each object requires
+`topic` and can include `meta`, `ttl`, and `hash`. Store content with `POST /cas`
+first, then put its hash in the corresponding object. Do not supply frame IDs.
+The server assigns consecutive IDs and commits the batch together. A malformed
+line or more than 1024 frames returns 400. An invalid topic also rejects the
+whole batch; xs 0.16.0 returns 500 for that validation failure. These rejected
+batches store no frames. The response is NDJSON in append order.
+`with-timestamp` is also supported.
+
+**Example: append two metadata-only frames.**
+
+```sh
+printf '%s\n' \
+  '{"topic":"notes","meta":{"text":"Discuss the budget"}}' \
+  '{"topic":"notes","meta":{"text":"Confirm the date"}}' |
+  curl --fail --unix-socket ./store/sock --data-binary @- \
+    'http://localhost/append-batch'
+```
+
+`POST /gc` returns `in_use`, `recent`, `deleted`, and `bytes_freed` counts.
+It keeps content referenced by a stored frame's `hash`, and unreferenced content
+written within the last hour. Metadata hashes do not retain content. The server
+also runs this cleanup at startup. See [CAS retention](store.md#frames-and-content).
+
 Successful reads return 200. Removal returns 204. Malformed requests return 400;
-missing resources return 404; server errors return 500.
+missing frames return 404; server errors return 500. In xs 0.16.0, a missing
+CAS object can close the connection without an HTTP response.
 
 | Eval result                | HTTP representation |
 | -------------------------- | ------------------- |

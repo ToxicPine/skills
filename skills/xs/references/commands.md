@@ -106,10 +106,10 @@ result produces no output. The HTTP representation is listed in
 
 ## SCRU128 operations
 
-`unpack` returns `timestamp`, `counter_hi`, `counter_lo`, and `node`. The
-timestamp is Unix time in seconds with millisecond precision. The counters are
-24-bit values; `node` is a 32-bit value represented as a hexadecimal string.
-`pack` accepts the same fields as a JSON object on stdin.
+`unpack` returns `ts_ms`, `counter_hi`, `counter_lo`, and `node`. `ts_ms`
+is an integer Unix timestamp in milliseconds. The counters are 24-bit values;
+`node` is a 32-bit value represented as a hexadecimal string. `pack` accepts
+the same fields as a JSON object on stdin.
 
 **Example: round trip.** The `-` argument makes `unpack` read stdin:
 
@@ -128,6 +128,11 @@ These options control the server process and the local xs.nu module.
 | `--fsync interval:MS`  | Sync on a timer when writes occurred; default `interval:1000`     |
 | `--fsync never`        | Leave synchronization to the operating system                     |
 | `--ttl-sweep MS`       | Set the expiry sweep interval; default 1000; 0 disables the sweep |
+| `--plugin PATH`        | Load a Nushell plugin binary; repeat for additional plugins       |
+
+Plugin commands are available to eval, actors, services, and actions. Use
+plugins compatible with the embedded Nushell version. A plugin load failure
+stops server startup and identifies the failed path.
 
 With no options, `xs nu` prints the module contents.
 
@@ -163,8 +168,8 @@ The following table lists their documented forms:
 `.cat` supports the read options above except CLI-only `--sse`. Its topic filter
 also accepts a Nushell list. `.last` accepts the same topic patterns or a list.
 Timestamp options produce native Nushell datetime values. `.eval` accepts `-c`
-as the alias for `--commands`. `.id pack` converts native datetime values into
-the numeric timestamp format.
+as the alias for `--commands`. `.id unpack` adds `when` as a native datetime;
+`.id pack` ignores that display field and uses the integer `ts_ms` value.
 
 `.tmp-spawn` sets `XS_ADDR` for the closure. Its `--interactive` option opens a
 Nushell session after the closure. Cleanup removes the process and temporary

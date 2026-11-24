@@ -10,6 +10,13 @@ Content lives separately in content-addressable storage (CAS). Content is
 immutable, referenced by hash, and deduplicated. Reading frames retrieves their
 metadata. A separate CAS read retrieves content.
 
+Since xs 0.16, CAS cleanup runs at server startup and on `POST /gc`. It deletes
+content written more than one hour ago if no stored frame has that content's
+hash. Hashes inside metadata do not count as references. Content from removed,
+trimmed, or ephemeral frames can therefore disappear. To retain uploaded content,
+append a retained frame with that content as its body before the grace period
+ends. See [store skills](store-skills.md#publication) for manifest files.
+
 **Recommendation:** Use metadata for records, numbers, and small strings. Use
 CAS for large text, images, and other blobs. Store application dates in
 metadata. The frame's timestamp identifies its creation time.
@@ -96,17 +103,23 @@ runtime reserves `xs.*` for lifecycle, modules, and system markers.
 | `xs.start`     | Server initialization is complete               |
 | `xs.threshold` | A read has reached the end of historical replay |
 | `xs.pulse`     | Synthetic heartbeat for a following read        |
+| `xs.lagged`    | A following read fell behind its live buffer   |
 | `xs.stopping`  | The server is shutting down                     |
 
 **Example: topic selection.** `user.*` selects descendants such as
 `user.alice.notes`. Selecting both the parent and its descendants requires
 `user,user.*`.
 
-Following reads may deliver synthetic `xs.threshold` and `xs.pulse` frames even
-with a topic filter. `--new` skips the historical replay and its threshold
-marker. The server disconnects a slow reader that exhausts the 4,096-frame live
-buffer. Recovery reads can retrieve retained frames after the last successfully
-handled source ID. Expired and ephemeral frames are unavailable for recovery.
+Following reads deliver synthetic control frames even with a topic filter.
+`--new` skips the historical replay and its threshold marker. Historical replay
+reads from the store and catches up before live delivery.
+
+A slow live reader that exhausts the 4,096-frame buffer receives `xs.lagged`
+with `meta.skipped`, then the read ends. `xs cat --follow` and
+`xs last --follow` print that frame and exit with status 1. Builtin following
+reads end with an error. Resume after the last successfully handled source frame
+ID, excluding synthetic markers. Recovery reads can retrieve retained frames.
+Expired and ephemeral frames are unavailable for recovery.
 
 ## Relationships and views
 
@@ -155,10 +168,17 @@ branching, and a task-state projection with live interface updates.
 | `last:<n>`  | Retain the newest N on that topic; N must be at least 1 |
 
 The `.append --ttl` and `xs append --ttl` options set retention. A frame's TTL
-is fixed when it is appended. `last:n` applies to all frames on the topic.
-Time-expired frames are hidden immediately on reads; disk cleanup runs in the
-background. `last:n` trimming is asynchronous, so reads may briefly see more
-than N frames. Explicit removal and retention policies can delete history.
+is fixed when it is appended. Time-expired frames are hidden immediately on
+reads; disk cleanup runs in the background.
+
+An append with `last:n` trims the topic in the same commit. The trim removes
+the oldest frames regardless of their own TTL. An append without `last:n` does
+not trim, so it can take the topic above N. Use `last:n` on every append that
+must enforce that limit. A large backlog, for example after lowering N or
+restoring frames, is trimmed in background batches.
+
+Explicit removal and retention policies can delete history. CAS cleanup can
+then delete content that no stored frame references.
 
 **Recommendation:** Retain original inputs when later reprocessing is needed.
 Use `last:1` for a topic that holds one derived current-state value.
